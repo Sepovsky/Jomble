@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jomble — Resume Matcher</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+
+    <header class="site-header">
+      <div class="logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">Jomble</span>
+      </div>
+      <p class="tagline">Match your resume to any job posting instantly</p>
+    </header>
+
+    <main>
+      <!-- Input card -->
+      <section class="card" id="input-card">
+        <form id="match-form" novalidate>
+
+          <div class="field">
+            <label for="job-url">Job Posting URL</label>
+            <div class="input-wrapper">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+              </svg>
+              <input
+                type="url"
+                id="job-url"
+                name="job_url"
+                placeholder="https://jobs.lever.co/company/job-id"
+                required
+                autocomplete="off"
+              />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="resume">Resume (PDF)</label>
+            <div class="drop-zone" id="drop-zone">
+              <input type="file" id="resume" name="resume" accept=".pdf" required hidden />
+              <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <p class="drop-text">Drag & drop your PDF here</p>
+              <p class="drop-sub">or <span class="browse-link">browse files</span></p>
+              <p class="file-name" id="file-name"></p>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary" id="submit-btn">
+            <span class="btn-label">Analyze Match</span>
+            <span class="btn-spinner" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+              Analyzing…
+            </span>
+          </button>
+
+          <p class="error-msg" id="error-msg" hidden></p>
+        </form>
+      </section>
+
+      <!-- Results card -->
+      <section class="card results-card" id="results-card" hidden>
+
+        <div class="score-section">
+          <div class="score-ring-wrapper">
+            <svg class="score-ring" viewBox="0 0 120 120">
+              <circle class="ring-bg"  cx="60" cy="60" r="50"/>
+              <circle class="ring-fill" cx="60" cy="60" r="50" id="ring-fill"/>
+            </svg>
+            <div class="score-label">
+              <span class="score-number" id="score-number">0</span>
+              <span class="score-pct">%</span>
+            </div>
+          </div>
+          <div class="score-meta">
+            <h2 class="score-title" id="score-title">Match Score</h2>
+            <p class="summary-text" id="summary-text"></p>
+          </div>
+        </div>
+
+        <div class="skills-grid">
+          <div class="skill-col matched-col">
+            <h3><span class="dot dot-green"></span>Matched <span class="badge" id="matched-count">0</span></h3>
+            <ul id="matched-list"></ul>
+          </div>
+          <div class="skill-col missing-col">
+            <h3><span class="dot dot-red"></span>Missing <span class="badge" id="missing-count">0</span></h3>
+            <ul id="missing-list"></ul>
+          </div>
+          <div class="skill-col extra-col">
+            <h3><span class="dot dot-blue"></span>Extra in CV <span class="badge" id="extra-count">0</span></h3>
+            <ul id="extra-list"></ul>
+          </div>
+        </div>
+
+        <button class="btn-secondary" id="reset-btn">← Analyze another job</button>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
