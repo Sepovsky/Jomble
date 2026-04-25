@@ -9,3 +9,4 @@ class MatchResponse(BaseModel):
     job_skill_count: int
     resume_skill_count: int
     summary: str
+    job_text: str = ""

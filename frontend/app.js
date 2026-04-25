@@ -1,4 +1,8 @@
-const API_URL = "/api/match";
+const API_URL        = "/api/match";
+const API_TAILOR_URL = "/api/tailor";
+
+let _jobText   = "";
+let _missing   = [];
 
 const form       = document.getElementById("match-form");
 const submitBtn  = document.getElementById("submit-btn");
@@ -80,6 +84,9 @@ form.addEventListener("submit", async (e) => {
 // ── Results ────────────────────────────────────────────────────────────────
 
 function renderResults(data) {
+  _jobText = data.job_text || "";
+  _missing = data.missing  || [];
+
   inputCard.hidden  = true;
   resultsCard.hidden = false;
 
@@ -142,6 +149,97 @@ function scoreColor(score) {
   if (score >= 70) return "#10B981";
   if (score >= 45) return "#F59E0B";
   return "#EF4444";
+}
+
+// ── Improve / Tailor ──────────────────────────────────────────────────────
+
+const improveBtn   = document.getElementById("improve-btn");
+const improveModal = document.getElementById("improve-modal");
+const modalCancel  = document.getElementById("modal-cancel");
+const modalSubmit  = document.getElementById("modal-submit");
+const modalError   = document.getElementById("modal-error");
+const texDropZone  = document.getElementById("tex-drop-zone");
+const texFileInput = document.getElementById("tex-file");
+const texFileName  = document.getElementById("tex-file-name");
+const texBrowse    = document.getElementById("tex-browse");
+
+improveBtn.addEventListener("click", () => { improveModal.hidden = false; });
+modalCancel.addEventListener("click", closeModal);
+improveModal.addEventListener("click", (e) => { if (e.target === improveModal) closeModal(); });
+
+texBrowse.addEventListener("click", () => texFileInput.click());
+texDropZone.addEventListener("click", () => texFileInput.click());
+
+texDropZone.addEventListener("dragover",  (e) => { e.preventDefault(); texDropZone.classList.add("drag-over"); });
+texDropZone.addEventListener("dragleave", ()  => texDropZone.classList.remove("drag-over"));
+texDropZone.addEventListener("drop", (e) => {
+  e.preventDefault();
+  texDropZone.classList.remove("drag-over");
+  if (e.dataTransfer.files[0]) setTexFile(e.dataTransfer.files[0]);
+});
+texFileInput.addEventListener("change", () => {
+  if (texFileInput.files[0]) setTexFile(texFileInput.files[0]);
+});
+
+function setTexFile(file) {
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  texFileInput.files = dt.files;
+  texFileName.textContent = file.name;
+  texDropZone.classList.add("has-file");
+}
+
+modalSubmit.addEventListener("click", async () => {
+  const file = texFileInput.files[0];
+  if (!file) { showModalError("Please upload a .tex or .zip file."); return; }
+
+  modalError.hidden = true;
+  const label   = modalSubmit.querySelector(".btn-label");
+  const spinner = modalSubmit.querySelector(".btn-spinner");
+  modalSubmit.disabled = true;
+  label.hidden   = true;
+  spinner.hidden = false;
+
+  try {
+    const fd = new FormData();
+    fd.append("tex_file", file);
+    fd.append("job_text", _jobText);
+    fd.append("missing",  JSON.stringify(_missing));
+
+    const res = await fetch(API_TAILOR_URL, { method: "POST", body: fd });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Server error ${res.status}`);
+    }
+
+    const blob   = await res.blob();
+    const url    = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href     = url;
+    anchor.download = "tailored_resume.zip";
+    anchor.click();
+    URL.revokeObjectURL(url);
+    closeModal();
+  } catch (err) {
+    showModalError(err.message || "Something went wrong. Please try again.");
+  } finally {
+    modalSubmit.disabled = false;
+    label.hidden   = false;
+    spinner.hidden = true;
+  }
+});
+
+function closeModal() {
+  improveModal.hidden = true;
+  texFileName.textContent = "";
+  texDropZone.classList.remove("has-file");
+  texFileInput.value = "";
+  modalError.hidden  = true;
+}
+
+function showModalError(msg) {
+  modalError.textContent = msg;
+  modalError.hidden = false;
 }
 
 // ── Reset ──────────────────────────────────────────────────────────────────

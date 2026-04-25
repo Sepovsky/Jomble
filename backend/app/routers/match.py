@@ -39,4 +39,4 @@ async def match(
         os.unlink(tmp_path)
 
     result = JobMatcher().match(resume_text, job_text)
-    return MatchResponse(**result.to_dict())
+    return MatchResponse(**result.to_dict(), job_text=job_text)

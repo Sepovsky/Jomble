@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import match
+from app.routers import match, tailor
 
 app = FastAPI(title="Jomble API", version="1.0.0")
 
@@ -13,3 +13,4 @@ app.add_middleware(
 )
 
 app.include_router(match.router, prefix="/api")
+app.include_router(tailor.router, prefix="/api")

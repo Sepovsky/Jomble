@@ -104,8 +104,54 @@
           </div>
         </div>
 
+        <div class="improve-bar">
+          <button class="btn-improve" id="improve-btn">
+            ✨ Improve my resume for this job
+          </button>
+        </div>
+
         <button class="btn-secondary" id="reset-btn">← Analyze another job</button>
       </section>
+
+      <!-- Improve modal -->
+      <div class="modal-overlay" id="improve-modal" hidden>
+        <div class="modal-box">
+          <h2 class="modal-title">✨ Tailor your resume</h2>
+          <p class="modal-sub">Upload your LaTeX source and the LLM will rewrite it to better match this job.</p>
+
+          <div class="drop-zone" id="tex-drop-zone">
+            <input type="file" id="tex-file" accept=".tex,.zip" hidden />
+            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <p class="drop-text">Drag & drop your .tex or .zip here</p>
+            <p class="drop-sub">or <span class="browse-link" id="tex-browse">browse files</span></p>
+            <p class="file-name" id="tex-file-name"></p>
+          </div>
+
+          <p class="modal-note">
+            A <code>.zip</code> with the tailored <code>.tex</code> and compiled <code>.pdf</code> will download automatically.<br/>
+            If your template uses a custom class (e.g. <code>resume.cls</code>), upload a <code>.zip</code> containing <strong>all project files</strong> — not just the <code>.tex</code>.<br/>
+            You can also open the <code>.tex</code> in <a href="https://overleaf.com" target="_blank">Overleaf</a> to edit further.
+          </p>
+
+          <div class="modal-actions">
+            <button class="btn-secondary" id="modal-cancel">Cancel</button>
+            <button class="btn-primary" id="modal-submit" style="width:auto;padding:12px 28px">
+              <span class="btn-label">Generate</span>
+              <span class="btn-spinner" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                </svg>
+                Tailoring…
+              </span>
+            </button>
+          </div>
+          <p class="error-msg" id="modal-error" hidden></p>
+        </div>
+      </div>
 
     </main>
   </div>
