@@ -1,8 +1,9 @@
 const API_URL        = "/api/match";
 const API_TAILOR_URL = "/api/tailor";
 
-let _jobText   = "";
-let _missing   = [];
+let _jobText  = "";
+let _missing  = [];
+let _summary  = "";
 
 const form       = document.getElementById("match-form");
 const submitBtn  = document.getElementById("submit-btn");
@@ -86,6 +87,7 @@ form.addEventListener("submit", async (e) => {
 function renderResults(data) {
   _jobText = data.job_text || "";
   _missing = data.missing  || [];
+  _summary = data.summary  || "";
 
   inputCard.hidden  = true;
   resultsCard.hidden = false;
@@ -205,6 +207,7 @@ modalSubmit.addEventListener("click", async () => {
     fd.append("tex_file", file);
     fd.append("job_text", _jobText);
     fd.append("missing",  JSON.stringify(_missing));
+    fd.append("summary",  _summary);
 
     const res = await fetch(API_TAILOR_URL, { method: "POST", body: fd });
     if (!res.ok) {

@@ -1,9 +1,12 @@
 import io
 import json
+import logging
 import os
 import subprocess
 import tempfile
 import zipfile
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
@@ -56,6 +59,11 @@ def _extract_tex(data: bytes, filename: str) -> tuple[str, dict[str, bytes]]:
 
 def _compile_pdf(tex_content: str, supporting: dict[str, bytes]) -> bytes | None:
     """Compile LaTeX source to PDF. Returns PDF bytes or None on failure."""
+    import shutil
+    if not shutil.which("pdflatex"):
+        logger.warning("pdflatex not found — skipping PDF compilation")
+        return None
+
     with tempfile.TemporaryDirectory() as tmpdir:
         # Write supporting files first (.cls, .sty, images, etc.)
         for name, file_bytes in supporting.items():
@@ -73,25 +81,44 @@ def _compile_pdf(tex_content: str, supporting: dict[str, bytes]) -> bytes | None
             tex_path,
         ]
         # Run twice so references, TOC, etc. resolve correctly
-        for _ in range(2):
-            subprocess.run(cmd, capture_output=True, timeout=60)
+        for run in range(1, 3):
+            proc = subprocess.run(cmd, capture_output=True, timeout=60)
+            if proc.returncode != 0:
+                logger.warning(
+                    "pdflatex run %d exited %d:\n%s",
+                    run, proc.returncode,
+                    proc.stdout.decode("utf-8", errors="replace")[-3000:],
+                )
 
         pdf_path = os.path.join(tmpdir, "resume.pdf")
         if not os.path.exists(pdf_path):
+            logger.error("PDF not produced after pdflatex runs")
             return None
 
         with open(pdf_path, "rb") as f:
             return f.read()
 
 
-def _build_zip(tex_content: str, pdf_bytes: bytes | None) -> bytes:
-    """Bundle .tex and (optionally) .pdf into a ZIP archive."""
+def _build_zip(
+    tex_content: str,
+    pdf_bytes: bytes | None,
+    validation: dict | None = None,
+) -> bytes:
+    """Bundle .tex, (optionally) .pdf, and validation report into a ZIP archive."""
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("tailored_resume.tex", tex_content.encode("utf-8"))
         if pdf_bytes:
             zf.writestr("tailored_resume.pdf", pdf_bytes)
+        if validation is not None:
+            zf.writestr(
+                "validation_report.json",
+                json.dumps(validation, indent=2).encode("utf-8"),
+            )
     return buf.getvalue()
+
+
+_MAX_TAILOR_ATTEMPTS = 2
 
 
 @router.post("/tailor")
@@ -99,23 +126,51 @@ async def tailor(
     tex_file: UploadFile = UploadFile(...),
     job_text: str = Form(...),
     missing: str = Form("[]"),
+    summary: str = Form(""),
 ) -> StreamingResponse:
     raw = await tex_file.read()
-    tex_content, supporting = _extract_tex(raw, tex_file.filename or "")
+    original_tex, supporting = _extract_tex(raw, tex_file.filename or "")
 
     try:
         missing_list: list[str] = json.loads(missing)
     except Exception:
         missing_list = []
 
-    tailored_tex = ResumeTailor().tailor(
-        tex_content=tex_content,
-        job_text=job_text,
-        missing=missing_list,
-    )
+    tailor_svc = ResumeTailor()
+    tailored_tex = original_tex  # safe fallback — always return something
+    validation: dict = {}
+
+    for attempt in range(1, _MAX_TAILOR_ATTEMPTS + 1):
+        candidate = tailor_svc.tailor(
+            tex_content=original_tex,
+            job_text=job_text,
+            missing=missing_list,
+            summary=summary,
+        )
+
+        # Guard against empty LLM response
+        tailored_tex = candidate if candidate.strip() else original_tex
+
+        validation = tailor_svc.validate(
+            original_tex=original_tex,
+            tailored_tex=tailored_tex,
+        )
+
+        recommendation = validation.get("recommendation", "accept")
+        logger.info(
+            "Tailor attempt %d/%d — original=%d tailored=%d is_safe=%s recommendation=%s",
+            attempt, _MAX_TAILOR_ATTEMPTS,
+            len(original_tex), len(tailored_tex),
+            validation.get("is_safe"), recommendation,
+        )
+
+        if recommendation in ("accept", "reject"):
+            break
+
+        # "regenerate": loop and try once more
 
     pdf_bytes = _compile_pdf(tailored_tex, supporting)
-    zip_bytes = _build_zip(tailored_tex, pdf_bytes)
+    zip_bytes = _build_zip(tailored_tex, pdf_bytes, validation)
 
     return StreamingResponse(
         io.BytesIO(zip_bytes),

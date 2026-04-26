@@ -1,41 +1,74 @@
 from __future__ import annotations
 
+import json
+import logging
 import os
 import textwrap
-from typing import Optional
+from typing import Any, Optional
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+
 _SYSTEM_PROMPT = textwrap.dedent("""
-    You are an expert resume writer specialising in LaTeX resumes.
+    You are a resume optimization expert.
+
     You will receive:
-      1. A LaTeX resume source (.tex)
+      1. A LaTeX resume source
       2. A job description
-      3. A list of skills/qualifications the resume is currently missing for this role
+      3. A recruiter's assessment of the candidate's fit
+      4. A list of skills the resume is missing for this role
 
-    Your task is to tailor the LaTeX resume so it better matches the job by:
-    - Rewriting bullet points in experience and project sections to highlight
-      relevant competencies and mirror the language of the job description.
-    - Expanding or reordering the skills section to surface relevant skills the
-      candidate already has but may have understated.
-    - Rewriting the summary / objective (if present) to target this specific role.
-    - Where a "missing" skill is genuinely demonstrated by the candidate's
-      experience (even if not named explicitly), add it naturally to the text.
-    - Do NOT invent experience or skills the candidate does not have.
+    Your task is to suggest targeted text improvements as a list of string
+    replacements. You must NOT rewrite or return the full resume.
 
-    STRICT LaTeX rules — you must follow these exactly:
-    - Return ONLY the complete, valid LaTeX source code.
-    - Do NOT wrap the output in markdown fences or add any explanation.
-    - Preserve every LaTeX command, environment, package import, and document
-      structure exactly as in the original.
-    - Only change the human-readable text content inside LaTeX commands.
+    OUTPUT FORMAT — return ONLY a valid JSON object, no markdown fences:
+    {
+      "replacements": [
+        {"original": "<exact text from resume>", "improved": "<better version>"},
+        ...
+      ]
+    }
+
+    WHAT YOU MAY REPLACE:
+    - Bullet point text (the human-readable content inside \\item or \\resumeItem)
+    - Skills list text (the text inside a skills section)
+    - Summary or objective paragraph text
+
+    WHAT YOU MUST NEVER CHANGE:
+    - Employer names, company names
+    - Job titles / role names
+    - Employment dates or date ranges
+    - School names, degree names, education dates
+    - Project names
+    - Candidate name, email, phone, location, links
+    - Award or publication names
+    - Any LaTeX commands, environments, or macros
+    - Any numbers or metrics not present in the original
+
+    RULES FOR REPLACEMENTS:
+    - "original" must be copied VERBATIM from the resume — it must match exactly.
+    - "improved" must preserve the same underlying fact, just with stronger
+      action verbs, better ATS alignment, or job-relevant emphasis.
+    - Only include a replacement when you can genuinely improve it.
+    - Do NOT invent tools, technologies, metrics, or achievements.
+    - Do NOT add a skill the candidate does not already demonstrate.
+    - If a missing skill is genuinely evidenced in the resume content, you may
+      clarify the existing text to name it — but do not fabricate it.
+    - Keep every "improved" string at a similar length to "original".
+    - Return an empty replacements list if no safe improvements exist.
 """).strip()
 
 _USER_TEMPLATE = textwrap.dedent("""
     ## JOB DESCRIPTION
     {job_text}
+
+    ---
+
+    ## RECRUITER'S ASSESSMENT
+    {summary}
 
     ---
 
@@ -46,6 +79,34 @@ _USER_TEMPLATE = textwrap.dedent("""
 
     ## LATEX RESUME SOURCE
     {tex_content}
+
+    ---
+
+    Now return the JSON replacements object.
+""").strip()
+
+_VALIDATION_PROMPT = textwrap.dedent("""
+    You are a strict resume validation assistant.
+
+    Compare the original resume and the tailored resume.
+
+    Return only valid JSON with this schema:
+
+    {
+      "is_safe": <true or false>,
+      "hallucinations": [<unsupported additions or changed facts>],
+      "changed_sensitive_facts": [<changed employers, schools, dates, titles, degrees, awards, links>],
+      "unsupported_skills": [<skills added without evidence>],
+      "recommendation": "<accept, reject, or regenerate>"
+    }
+
+    Rules:
+    - Mark is_safe as false if any employer, school, job title, degree, date,
+      project, award, metric, or major skill was invented or changed without
+      support from the original resume.
+    - The job description is not evidence about the candidate.
+    - The original resume is the only source of truth.
+    - Be strict.
 """).strip()
 
 _MAX_CHARS = 12000
@@ -66,6 +127,7 @@ class ResumeTailor:
         tex_content: str,
         job_text: str,
         missing: list[str],
+        summary: str = "",
     ) -> str:
         from openai import OpenAI
 
@@ -73,6 +135,7 @@ class ResumeTailor:
 
         user_content = _USER_TEMPLATE.format(
             job_text=job_text[:_MAX_CHARS],
+            summary=summary if summary else "No assessment provided.",
             missing=", ".join(missing) if missing else "none identified",
             tex_content=tex_content[:_MAX_CHARS],
         )
@@ -86,14 +149,93 @@ class ResumeTailor:
             temperature=0.3,
         )
 
-        result = (response.choices[0].message.content or "").strip()
-
-        # Strip any accidental markdown fences the model might add
-        if result.startswith("```"):
-            lines = result.splitlines()
-            result = "\n".join(
-                line for line in lines
+        raw = (response.choices[0].message.content or "").strip()
+        if raw.startswith("```"):
+            raw = "\n".join(
+                line for line in raw.splitlines()
                 if not line.startswith("```")
             ).strip()
 
+        # Parse replacements JSON
+        try:
+            data = json.loads(raw)
+            replacements: list[dict] = data.get("replacements", [])
+        except json.JSONDecodeError:
+            logger.warning("tailor() — LLM returned non-JSON, no replacements applied:\n%s", raw[:500])
+            return tex_content
+
+        # Apply each replacement to the ORIGINAL source (never modify structure)
+        result = tex_content
+        applied = 0
+        skipped = 0
+        for item in replacements:
+            original = item.get("original", "")
+            improved = item.get("improved", "")
+            if not original or not improved or original == improved:
+                continue
+            if original not in result:
+                logger.warning("tailor() — replacement not found in tex (skipped): %r", original[:80])
+                skipped += 1
+                continue
+            result = result.replace(original, improved, 1)
+            applied += 1
+
+        logger.info(
+            "tailor() done — %d replacements applied, %d skipped (not found in source)",
+            applied, skipped,
+        )
         return result
+
+    def validate(
+        self,
+        original_tex: str,
+        tailored_tex: str,
+    ) -> dict[str, Any]:
+        """Compare original and tailored LaTeX and return a safety report."""
+        from openai import OpenAI
+
+        client = OpenAI(api_key=self._api_key)
+
+        # Only send the differing lines to keep the prompt focused
+        orig_lines = set(original_tex.splitlines())
+        tail_lines = set(tailored_tex.splitlines())
+        added = "\n".join(tail_lines - orig_lines)
+        removed = "\n".join(orig_lines - tail_lines)
+
+        user_content = textwrap.dedent(f"""
+            ## LINES REMOVED FROM ORIGINAL
+            {removed[:_MAX_CHARS] or "(none)"}
+
+            ---
+
+            ## LINES ADDED IN TAILORED VERSION
+            {added[:_MAX_CHARS] or "(none)"}
+        """).strip()
+
+        response = client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": _VALIDATION_PROMPT},
+                {"role": "user", "content": user_content},
+            ],
+            temperature=0.0,
+        )
+
+        raw = (response.choices[0].message.content or "").strip()
+        if raw.startswith("```"):
+            raw = "\n".join(
+                line for line in raw.splitlines()
+                if not line.startswith("```")
+            ).strip()
+
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            return {
+                "is_safe": False,
+                "hallucinations": [],
+                "changed_sensitive_facts": [],
+                "unsupported_skills": [],
+                "recommendation": "reject",
+                "parse_error": raw,
+            }
