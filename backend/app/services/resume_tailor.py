@@ -115,11 +115,12 @@ _MAX_CHARS = 12000
 class ResumeTailor:
     def __init__(
         self,
-        model: str = "gpt-4o",
+        model: str = "gpt-5.5",
+        validation_model: str = "gpt-5.4-mini",
         api_key: Optional[str] = None,
     ) -> None:
-        # gpt-4o gives much better LaTeX preservation than gpt-4o-mini
         self.model = model
+        self.validation_model = validation_model
         self._api_key = api_key or os.environ.get("OPENAI_API_KEY", "")
 
     def tailor(
@@ -146,7 +147,6 @@ class ResumeTailor:
                 {"role": "system", "content": _SYSTEM_PROMPT},
                 {"role": "user", "content": user_content},
             ],
-            temperature=0.3,
         )
 
         raw = (response.choices[0].message.content or "").strip()
@@ -213,12 +213,11 @@ class ResumeTailor:
         """).strip()
 
         response = client.chat.completions.create(
-            model=self.model,
+            model=self.validation_model,
             messages=[
                 {"role": "system", "content": _VALIDATION_PROMPT},
                 {"role": "user", "content": user_content},
             ],
-            temperature=0.0,
         )
 
         raw = (response.choices[0].message.content or "").strip()

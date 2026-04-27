@@ -113,7 +113,7 @@ class MatchResult:
 class JobMatcher:
     def __init__(
         self,
-        model: str = "gpt-4o-mini",
+        model: str = "gpt-5.4-mini",
         api_key: Optional[str] = None,
     ) -> None:
         self.model = model
@@ -137,7 +137,6 @@ class JobMatcher:
                     ),
                 },
             ],
-            temperature=0.2,
         )
 
         data = json.loads(response.choices[0].message.content or "{}")

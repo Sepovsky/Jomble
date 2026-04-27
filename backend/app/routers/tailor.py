@@ -118,9 +118,6 @@ def _build_zip(
     return buf.getvalue()
 
 
-_MAX_TAILOR_ATTEMPTS = 2
-
-
 @router.post("/tailor")
 async def tailor(
     tex_file: UploadFile = UploadFile(...),
@@ -137,37 +134,27 @@ async def tailor(
         missing_list = []
 
     tailor_svc = ResumeTailor()
-    tailored_tex = original_tex  # safe fallback — always return something
-    validation: dict = {}
 
-    for attempt in range(1, _MAX_TAILOR_ATTEMPTS + 1):
-        candidate = tailor_svc.tailor(
-            tex_content=original_tex,
-            job_text=job_text,
-            missing=missing_list,
-            summary=summary,
-        )
+    candidate = tailor_svc.tailor(
+        tex_content=original_tex,
+        job_text=job_text,
+        missing=missing_list,
+        summary=summary,
+    )
 
-        # Guard against empty LLM response
-        tailored_tex = candidate if candidate.strip() else original_tex
+    # Guard against empty LLM response
+    tailored_tex = candidate if candidate.strip() else original_tex
 
-        validation = tailor_svc.validate(
-            original_tex=original_tex,
-            tailored_tex=tailored_tex,
-        )
+    validation = tailor_svc.validate(
+        original_tex=original_tex,
+        tailored_tex=tailored_tex,
+    )
 
-        recommendation = validation.get("recommendation", "accept")
-        logger.info(
-            "Tailor attempt %d/%d — original=%d tailored=%d is_safe=%s recommendation=%s",
-            attempt, _MAX_TAILOR_ATTEMPTS,
-            len(original_tex), len(tailored_tex),
-            validation.get("is_safe"), recommendation,
-        )
-
-        if recommendation in ("accept", "reject"):
-            break
-
-        # "regenerate": loop and try once more
+    logger.info(
+        "Tailor complete — original=%d tailored=%d is_safe=%s recommendation=%s",
+        len(original_tex), len(tailored_tex),
+        validation.get("is_safe"), validation.get("recommendation"),
+    )
 
     pdf_bytes = _compile_pdf(tailored_tex, supporting)
     zip_bytes = _build_zip(tailored_tex, pdf_bytes, validation)
