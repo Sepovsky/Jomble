@@ -155,15 +155,20 @@ function scoreColor(score) {
 
 // ── Improve / Tailor ──────────────────────────────────────────────────────
 
-const improveBtn   = document.getElementById("improve-btn");
-const improveModal = document.getElementById("improve-modal");
-const modalCancel  = document.getElementById("modal-cancel");
-const modalSubmit  = document.getElementById("modal-submit");
-const modalError   = document.getElementById("modal-error");
-const texDropZone  = document.getElementById("tex-drop-zone");
-const texFileInput = document.getElementById("tex-file");
-const texFileName  = document.getElementById("tex-file-name");
-const texBrowse    = document.getElementById("tex-browse");
+const improveBtn      = document.getElementById("improve-btn");
+const improveModal    = document.getElementById("improve-modal");
+const modalCancel     = document.getElementById("modal-cancel");
+const modalSubmit     = document.getElementById("modal-submit");
+const modalError      = document.getElementById("modal-error");
+const texDropZone     = document.getElementById("tex-drop-zone");
+const texFileInput    = document.getElementById("tex-file");
+const texFileName     = document.getElementById("tex-file-name");
+const texBrowse       = document.getElementById("tex-browse");
+const tailorCard      = document.getElementById("tailor-card");
+const downloadBtn     = document.getElementById("download-btn");
+const backToResultBtn = document.getElementById("back-to-results-btn");
+
+let _zipB64 = "";
 
 improveBtn.addEventListener("click", () => { improveModal.hidden = false; });
 modalCancel.addEventListener("click", closeModal);
@@ -215,14 +220,9 @@ modalSubmit.addEventListener("click", async () => {
       throw new Error(err.detail || `Server error ${res.status}`);
     }
 
-    const blob   = await res.blob();
-    const url    = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href     = url;
-    anchor.download = "tailored_resume.zip";
-    anchor.click();
-    URL.revokeObjectURL(url);
+    const data = await res.json();
     closeModal();
+    renderTailorResults(data);
   } catch (err) {
     showModalError(err.message || "Something went wrong. Please try again.");
   } finally {
@@ -230,6 +230,54 @@ modalSubmit.addEventListener("click", async () => {
     label.hidden   = false;
     spinner.hidden = true;
   }
+});
+
+function renderTailorResults(data) {
+  _zipB64 = data.zip_b64 || "";
+
+  renderTailorList("short-term-list", data.short_term || []);
+  renderTailorList("long-term-list",  data.long_term  || []);
+
+  resultsCard.hidden = true;
+  tailorCard.hidden  = false;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function renderTailorList(listId, items) {
+  const ul = document.getElementById(listId);
+  ul.innerHTML = "";
+  if (!items.length) {
+    const li = document.createElement("li");
+    li.textContent = "—";
+    li.style.opacity = ".4";
+    ul.appendChild(li);
+    return;
+  }
+  items.forEach((text) => {
+    const li = document.createElement("li");
+    li.textContent = text;
+    ul.appendChild(li);
+  });
+}
+
+downloadBtn.addEventListener("click", () => {
+  if (!_zipB64) return;
+  const binary = atob(_zipB64);
+  const bytes  = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const blob   = new Blob([bytes], { type: "application/zip" });
+  const url    = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href     = url;
+  anchor.download = "tailored_resume.zip";
+  anchor.click();
+  URL.revokeObjectURL(url);
+});
+
+backToResultBtn.addEventListener("click", () => {
+  tailorCard.hidden  = true;
+  resultsCard.hidden = false;
+  window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
 function closeModal() {

@@ -291,6 +291,106 @@ input[type="url"]:focus { border-color: var(--indigo); }
 .btn-improve:hover  { opacity: .9; }
 .btn-improve:active { transform: scale(.98); }
 
+/* ── Tailor results card ─────────────────────────────────── */
+.tailor-card { margin-top: 24px; }
+
+.tailor-header { margin-bottom: 28px; }
+
+.tailor-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #6366F1, #8B5CF6);
+  color: #fff;
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+
+.tailor-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.tailor-section {
+  padding: 20px 0;
+  border-top: 1px solid var(--border);
+}
+
+.tailor-section-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+.tailor-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.tailor-dot-green  { background: var(--green); }
+.tailor-dot-indigo { background: var(--indigo); }
+
+.tailor-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tailor-list li {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: .88rem;
+  line-height: 1.55;
+  background: #ECFDF5;
+  color: #065F46;
+  border-left: 3px solid var(--green);
+}
+
+.long-term-list li {
+  background: #EEF2FF;
+  color: #3730A3;
+  border-left-color: var(--indigo);
+}
+
+.tailor-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.btn-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: var(--indigo);
+  color: #fff;
+  font-size: .95rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background .2s, transform .1s;
+}
+.btn-download:hover  { background: var(--indigo-dk); }
+.btn-download:active { transform: scale(.98); }
+
 /* ── Modal ───────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed;

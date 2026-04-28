@@ -113,6 +113,42 @@
         <button class="btn-secondary" id="reset-btn">← Analyze another job</button>
       </section>
 
+      <!-- Tailor results card -->
+      <section class="card tailor-card" id="tailor-card" hidden>
+        <div class="tailor-header">
+          <span class="tailor-badge">✨ Resume Tailored</span>
+          <h2 class="tailor-title">Here's what changed</h2>
+        </div>
+
+        <div class="tailor-section">
+          <div class="tailor-section-label">
+            <span class="tailor-dot tailor-dot-green"></span>
+            Short-term changes applied
+          </div>
+          <ul class="tailor-list" id="short-term-list"></ul>
+        </div>
+
+        <div class="tailor-section">
+          <div class="tailor-section-label">
+            <span class="tailor-dot tailor-dot-indigo"></span>
+            Long-term improvement plan
+          </div>
+          <ul class="tailor-list long-term-list" id="long-term-list"></ul>
+        </div>
+
+        <div class="tailor-actions">
+          <button class="btn-download" id="download-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download tailored resume
+          </button>
+          <button class="btn-secondary" id="back-to-results-btn">← Back to match results</button>
+        </div>
+      </section>
+
       <!-- Improve modal -->
       <div class="modal-overlay" id="improve-modal" hidden>
         <div class="modal-box">
@@ -132,7 +168,7 @@
           </div>
 
           <p class="modal-note">
-            A <code>.zip</code> with the tailored <code>.tex</code> and compiled <code>.pdf</code> will download automatically.<br/>
+            The LLM will tailor your resume and show you a summary of changes and a long-term improvement plan. You can then download the tailored <code>.tex</code> and <code>.pdf</code>.<br/>
             If your template uses a custom class (e.g. <code>resume.cls</code>), upload a <code>.zip</code> containing <strong>all project files</strong> — not just the <code>.tex</code>.<br/>
             You can also open the <code>.tex</code> in <a href="https://overleaf.com" target="_blank">Overleaf</a> to edit further.
           </p>

@@ -129,7 +129,8 @@ class ResumeTailor:
         job_text: str,
         missing: list[str],
         summary: str = "",
-    ) -> str:
+    ) -> tuple[str, list[dict]]:
+        """Return (tailored_tex, applied_replacements)."""
         from openai import OpenAI
 
         client = OpenAI(api_key=self._api_key)
@@ -162,11 +163,11 @@ class ResumeTailor:
             replacements: list[dict] = data.get("replacements", [])
         except json.JSONDecodeError:
             logger.warning("tailor() — LLM returned non-JSON, no replacements applied:\n%s", raw[:500])
-            return tex_content
+            return tex_content, []
 
         # Apply each replacement to the ORIGINAL source (never modify structure)
         result = tex_content
-        applied = 0
+        applied_list: list[dict] = []
         skipped = 0
         for item in replacements:
             original = item.get("original", "")
@@ -178,13 +179,92 @@ class ResumeTailor:
                 skipped += 1
                 continue
             result = result.replace(original, improved, 1)
-            applied += 1
+            applied_list.append(item)
 
         logger.info(
             "tailor() done — %d replacements applied, %d skipped (not found in source)",
-            applied, skipped,
+            len(applied_list), skipped,
         )
-        return result
+        return result, applied_list
+
+    def summarize(
+        self,
+        applied_replacements: list[dict],
+        missing: list[str],
+        recruiter_summary: str,
+    ) -> dict[str, Any]:
+        """Generate short-term change descriptions and long-term improvement advice."""
+        from openai import OpenAI
+
+        client = OpenAI(api_key=self._api_key)
+
+        replacements_text = "\n".join(
+            f'- Changed: "{r.get("original", "")[:120]}" → "{r.get("improved", "")[:120]}"'
+            for r in applied_replacements
+        ) or "No changes were applied."
+
+        user_content = textwrap.dedent(f"""
+            ## CHANGES APPLIED TO THE RESUME
+            {replacements_text}
+
+            ---
+
+            ## MISSING SKILLS (from job match)
+            {", ".join(missing) if missing else "none identified"}
+
+            ---
+
+            ## RECRUITER'S ASSESSMENT
+            {recruiter_summary or "No assessment provided."}
+        """).strip()
+
+        system = textwrap.dedent("""
+            You are a resume improvement advisor.
+
+            You will receive:
+              1. A list of text replacements that were applied to a resume
+              2. Skills the resume is missing for the target job
+              3. A recruiter's assessment of the candidate
+
+            Return ONLY a valid JSON object — no markdown fences — with this schema:
+            {
+              "short_term": ["<plain-English description of each change made>", ...],
+              "long_term":  ["<concrete actionable improvement for next 3-12 months>", ...]
+            }
+
+            short_term rules:
+            - Describe each replacement in one plain-English sentence (no LaTeX).
+            - Max 10 items.
+            - If no changes were applied, return a single item:
+              "No changes were needed — your resume already aligns well with this role."
+
+            long_term rules:
+            - Focus on skills, tools, certifications, or project types to build.
+            - Be specific: name actual tools, platforms, or credentials.
+            - Max 6 items.
+            - Base advice on the missing skills and recruiter assessment.
+        """).strip()
+
+        response = client.chat.completions.create(
+            model=self.validation_model,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user",   "content": user_content},
+            ],
+        )
+
+        raw = (response.choices[0].message.content or "").strip()
+        if raw.startswith("```"):
+            raw = "\n".join(
+                line for line in raw.splitlines()
+                if not line.startswith("```")
+            ).strip()
+
+        try:
+            return json.loads(raw)
+        except json.JSONDecodeError:
+            logger.warning("summarize() — failed to parse JSON: %s", raw[:300])
+            return {"short_term": [], "long_term": []}
 
     def validate(
         self,

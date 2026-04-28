@@ -1,3 +1,4 @@
+import base64
 import io
 import json
 import logging
@@ -9,7 +10,7 @@ import zipfile
 logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Form, HTTPException, UploadFile
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse
 
 from app.services.resume_tailor import ResumeTailor
 
@@ -124,7 +125,7 @@ async def tailor(
     job_text: str = Form(...),
     missing: str = Form("[]"),
     summary: str = Form(""),
-) -> StreamingResponse:
+) -> JSONResponse:
     raw = await tex_file.read()
     original_tex, supporting = _extract_tex(raw, tex_file.filename or "")
 
@@ -135,7 +136,7 @@ async def tailor(
 
     tailor_svc = ResumeTailor()
 
-    candidate = tailor_svc.tailor(
+    candidate, applied_replacements = tailor_svc.tailor(
         tex_content=original_tex,
         job_text=job_text,
         missing=missing_list,
@@ -150,17 +151,25 @@ async def tailor(
         tailored_tex=tailored_tex,
     )
 
+    improvement_summary = tailor_svc.summarize(
+        applied_replacements=applied_replacements,
+        missing=missing_list,
+        recruiter_summary=summary,
+    )
+
     logger.info(
-        "Tailor complete — original=%d tailored=%d is_safe=%s recommendation=%s",
+        "Tailor complete — original=%d tailored=%d is_safe=%s short_term=%d long_term=%d",
         len(original_tex), len(tailored_tex),
-        validation.get("is_safe"), validation.get("recommendation"),
+        validation.get("is_safe"),
+        len(improvement_summary.get("short_term", [])),
+        len(improvement_summary.get("long_term", [])),
     )
 
     pdf_bytes = _compile_pdf(tailored_tex, supporting)
     zip_bytes = _build_zip(tailored_tex, pdf_bytes, validation)
 
-    return StreamingResponse(
-        io.BytesIO(zip_bytes),
-        media_type="application/zip",
-        headers={"Content-Disposition": 'attachment; filename="tailored_resume.zip"'},
-    )
+    return JSONResponse({
+        "zip_b64":    base64.b64encode(zip_bytes).decode(),
+        "short_term": improvement_summary.get("short_term", []),
+        "long_term":  improvement_summary.get("long_term", []),
+    })
