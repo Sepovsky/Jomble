@@ -1,56 +1,70 @@
-# Jomble
+<div align="center">
 
-An AI-powered job-matching and resume-tailoring application. Paste a job posting URL, upload your resume PDF, and get an instant match score with actionable feedback. Optionally upload your LaTeX resume to have it tailored for the role.
+<img src="frontend/img/jomble-logo.png" alt="Jomble" width="260" />
+
+<p align="center"><strong>Resume intelligence — match your CV to any role and tailor it with AI.</strong></p>
+
+</div>
+
+---
+
+## Overview
+
+**Jomble** is an AI-powered job-matching and resume-tailoring app. Paste a job posting URL, upload your resume PDF, and get an instant match score with actionable feedback. Optionally upload your LaTeX resume to have it tailored for the role.
 
 ---
 
 ## Features
 
-- **Job Matching** — Scrapes any job posting URL and semantically matches it against your resume using GPT-4o-mini. Returns a score (0–100), matched skills, missing skills, and a plain-English recruiter assessment.
-- **Resume Tailoring** — Upload your LaTeX resume (`.tex` or `.zip`). The LLM suggests targeted text improvements as string-level patches — it never rewrites structure or invents fake experience.
-- **Post-Tailoring Validation** — A second LLM pass checks the tailored resume for hallucinations, changed facts, and unsupported skills before delivery.
-- **ZIP Download** — Get `tailored_resume.tex`, `tailored_resume.pdf` (when compiled), and `validation_report.json` in one download.
-- **Fully Dockerised** — One command to run the full stack.
+- **Job matching** — Scrapes a job posting URL and semantically matches it against your resume using an OpenAI model. Returns a score (0–100), matched skills, missing skills, and a plain-English summary.
+- **Preference checks** — Optional filters (location, remote policy, languages, salary, etc.) are validated against the posting before the resume match.
+- **Resume tailoring** — Upload your LaTeX resume (`.tex` or `.zip`). The model suggests targeted text improvements as string-level patches — it does not rewrite structure or invent experience.
+- **Post-tailoring validation** — A second pass checks the tailored resume for inconsistencies before delivery.
+- **ZIP download** — Get tailored sources plus optional PDF and validation metadata in one download.
+- **Dockerised stack** — Frontend (Nginx) + backend (FastAPI) via Docker Compose.
 
 ---
 
-## Tech Stack
+## Tech stack
 
 | Layer | Technology |
-|---|---|
-| Frontend | HTML, CSS, Vanilla JS served by Nginx |
+| --- | --- |
+| Frontend | HTML, CSS, vanilla JS (Nginx) |
 | Backend | Python, FastAPI |
-| LLM | OpenAI GPT-4o / GPT-4o-mini |
+| LLM | OpenAI API |
 | Scraping | Playwright (Chromium), BeautifulSoup |
-| PDF Parsing | PyMuPDF (fitz) |
-| LaTeX Compilation | pdflatex (TeX Live) |
-| Containerisation | Docker, Docker Compose |
+| PDF parsing | PyMuPDF (fitz) |
+| LaTeX | pdflatex (TeX Live), where available |
+| Containers | Docker, Docker Compose |
 
 ---
 
-## Project Structure
+## Project structure
 
 ```
 Jomble/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py                  # FastAPI app entry point
+│   │   ├── main.py                  # FastAPI entry
 │   │   ├── schemas.py               # Pydantic models
 │   │   ├── routers/
 │   │   │   ├── match.py             # POST /api/match
 │   │   │   └── tailor.py            # POST /api/tailor
 │   │   └── services/
-│   │       ├── job_fetcher.py       # Scrapes job posting HTML
-│   │       ├── job_matcher.py       # LLM-based resume↔job matching
-│   │       ├── resume_parser.py     # Extracts text from PDF resume
-│   │       └── resume_tailor.py     # LLM tailoring + validation
+│   │       ├── job_fetcher.py       # Job posting HTML
+│   │       ├── job_matcher.py       # Resume ↔ job matching
+│   │       ├── resume_parser.py     # PDF text extraction
+│   │       ├── resume_tailor.py     # Tailoring + validation
+│   │       └── metadata_gate.py     # Preference vs posting checks
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── frontend/
 │   ├── index.html
 │   ├── style.css
 │   ├── app.js
-│   └── Dockerfile
+│   ├── img/                         # Logo & favicon assets
+│   ├── Dockerfile
+│   └── nginx.conf
 ├── docker-compose.yml
 ├── .env                             # OPENAI_API_KEY (not committed)
 └── .gitignore
@@ -58,7 +72,7 @@ Jomble/
 
 ---
 
-## Getting Started
+## Getting started
 
 ### Prerequisites
 
@@ -81,50 +95,52 @@ echo "OPENAI_API_KEY=sk-..." > .env
 ### 3. Build and run
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
-The app will be available at **http://localhost**.
+The UI is served at **http://localhost** (port 80). The backend API is used by the frontend container on the internal Docker network.
 
 ---
 
 ## Usage
 
 ### Match
-1. Paste a job posting URL into the input field.
-2. Upload your resume as a **PDF**.
-3. Click **Analyse** — results appear with a score, matched/missing skills, and a summary.
 
-### Tailor (Improve)
-1. After matching, click the **Improve** button.
-2. Upload your resume as a **`.tex` file** or a **`.zip`** containing the `.tex` and any custom template files (`.cls`, `.sty`).
-3. Click **Generate** — a ZIP file downloads containing:
-   - `tailored_resume.tex` — your improved LaTeX source
-   - `tailored_resume.pdf` — compiled PDF (Docker only)
-   - `validation_report.json` — hallucination safety report
+1. Paste a **job posting URL**.
+2. Upload your resume as a **PDF**.
+3. Optionally expand **Your preferences** to filter by location, remote policy, languages, salary, and more.
+4. Click **Analyze Match** — you’ll see a score, preference check summary (if applicable), matched/missing skills, and a short assessment.
+
+### Tailor (improve)
+
+1. After a match, open **Improve my resume for this job**.
+2. Upload a **`.tex`** file or a **`.zip`** that includes your `.tex` and any needed `.cls` / `.sty` files.
+3. Click **Generate** — download the ZIP with tailored sources and reports (contents depend on backend configuration).
 
 ---
 
-## Environment Variables
+## Environment variables
 
 | Variable | Description |
-|---|---|
-| `OPENAI_API_KEY` | Your OpenAI secret key |
+| --- | --- |
+| `OPENAI_API_KEY` | OpenAI API secret key |
 
 ---
 
-## Local Development (without Docker)
+## Local development (without Docker)
 
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate
+source venv/bin/activate   # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 playwright install --with-deps chromium
 uvicorn app.main:app --reload --port 8000
 ```
 
-> **Note:** PDF compilation requires `pdflatex` (TeX Live). Without it, the `.tex` file is still tailored and included in the ZIP — only the `.pdf` is skipped.
+Serve the frontend separately (e.g. static file server pointed at `frontend/`) and configure the JS client to call `http://localhost:8000` if needed.
+
+> **Note:** PDF compilation needs `pdflatex` (TeX Live). Without it, tailored `.tex` may still be produced while PDF generation is skipped.
 
 ---
 
