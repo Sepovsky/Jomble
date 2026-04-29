@@ -13,6 +13,7 @@ const errorMsg   = document.getElementById("error-msg");
 const inputCard  = document.getElementById("input-card");
 const resultsCard = document.getElementById("results-card");
 const improveBar = document.getElementById("improve-bar");
+const resetBtn   = document.getElementById("reset-btn");
 const dropZone   = document.getElementById("drop-zone");
 const fileInput  = document.getElementById("resume");
 const fileNameEl = document.getElementById("file-name");
@@ -205,6 +206,7 @@ const texBrowse       = document.getElementById("tex-browse");
 const tailorCard      = document.getElementById("tailor-card");
 const downloadBtn     = document.getElementById("download-btn");
 const backToResultBtn = document.getElementById("back-to-results-btn");
+const resetFromTailorBtn = document.getElementById("reset-from-tailor-btn");
 
 let _zipB64 = "";
 
@@ -333,14 +335,52 @@ function showModalError(msg) {
 
 // ── Reset ──────────────────────────────────────────────────────────────────
 
-resetBtn.addEventListener("click", () => {
-  resultsCard.hidden = true;
-  inputCard.hidden   = false;
+function resetToInput() {
+  tailorCard.hidden   = true;
+  resultsCard.hidden  = true;
+  inputCard.hidden    = false;
+
+  if (improveBar) improveBar.hidden = false;
+
+  const mb = document.getElementById("metadata-banner");
+  if (mb) {
+    mb.hidden = true;
+    mb.innerHTML = "";
+  }
+
+  improveModal.hidden = true;
+  closeModal();
+
   form.reset();
+  fileInput.value = "";
   fileNameEl.textContent = "";
   dropZone.classList.remove("has-file");
+
+  const prefs = document.querySelector(".prefs-details");
+  if (prefs) prefs.open = false;
+
   document.getElementById("ring-fill").style.strokeDashoffset = 314;
+
+  _zipB64 = "";
+  _jobText = "";
+  _missing = [];
+  _summary = "";
+
+  hideError();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+resetBtn?.addEventListener("click", (e) => {
+  e.preventDefault();
+  resetToInput();
 });
+
+if (resetFromTailorBtn) {
+  resetFromTailorBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    resetToInput();
+  });
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 

@@ -119,9 +119,11 @@ async def match(
 
     combined_summary = result.summary + warn_suffix
 
+    payload = result.to_dict()
+    payload["summary"] = combined_summary
+
     return MatchResponse(
-        **result.to_dict(),
-        summary=combined_summary,
+        **payload,
         job_text=job_text,
         metadata_satisfied=True,
         metadata_blockers=[],
