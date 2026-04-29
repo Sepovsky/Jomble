@@ -55,6 +55,75 @@
             </div>
           </div>
 
+          <details class="prefs-details">
+            <summary class="prefs-summary">Your preferences <span class="prefs-hint">(optional — checked before resume match)</span></summary>
+            <div class="prefs-grid">
+              <div class="field">
+                <label for="location_preference">Location / region</label>
+                <input type="text" id="location_preference" name="location_preference" placeholder="e.g. Montreal, Remote EU, Canada only" autocomplete="off" />
+              </div>
+              <div class="field">
+                <label for="remote_policy">Remote policy</label>
+                <select id="remote_policy" name="remote_policy">
+                  <option value="any">Any</option>
+                  <option value="remote_only">Remote only</option>
+                  <option value="hybrid_ok">Hybrid OK</option>
+                  <option value="onsite_ok">On-site OK</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="languages_speak">Languages you speak</label>
+                <input type="text" id="languages_speak" name="languages_speak" placeholder="e.g. English (native), French (B2)" autocomplete="off" />
+              </div>
+              <div class="field">
+                <label for="languages_required">Languages you need from the role</label>
+                <input type="text" id="languages_required" name="languages_required" placeholder="e.g. English required; French nice-to-have" autocomplete="off" />
+              </div>
+              <div class="field">
+                <label for="sponsorship">Work authorization</label>
+                <select id="sponsorship" name="sponsorship">
+                  <option value="no_preference">No preference</option>
+                  <option value="authorized">Already authorized to work</option>
+                  <option value="need_sponsorship">Need visa / sponsorship</option>
+                </select>
+              </div>
+              <div class="field field-row">
+                <div>
+                  <label for="salary_min">Minimum salary (optional)</label>
+                  <input type="text" id="salary_min" name="salary_min" inputmode="decimal" placeholder="e.g. 120000" autocomplete="off" />
+                </div>
+                <div>
+                  <label for="salary_currency">Currency</label>
+                  <select id="salary_currency" name="salary_currency">
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                    <option value="CAD">CAD</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field">
+                <label for="employment_type">Employment type</label>
+                <select id="employment_type" name="employment_type">
+                  <option value="any">Any</option>
+                  <option value="full_time">Full-time permanent</option>
+                  <option value="contract">Contract</option>
+                  <option value="part_time">Part-time</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="seniority">Seniority you’re targeting</label>
+                <select id="seniority" name="seniority">
+                  <option value="any">Any</option>
+                  <option value="junior">Junior / entry</option>
+                  <option value="mid">Mid-level</option>
+                  <option value="senior">Senior</option>
+                  <option value="lead">Lead / staff</option>
+                </select>
+              </div>
+            </div>
+          </details>
+
           <button type="submit" class="btn-primary" id="submit-btn">
             <span class="btn-label">Analyze Match</span>
             <span class="btn-spinner" hidden>
@@ -71,6 +140,8 @@
 
       <!-- Results card -->
       <section class="card results-card" id="results-card" hidden>
+
+        <div class="metadata-banner" id="metadata-banner" hidden></div>
 
         <div class="score-section">
           <div class="score-ring-wrapper">
@@ -104,7 +175,7 @@
           </div>
         </div>
 
-        <div class="improve-bar">
+        <div class="improve-bar" id="improve-bar">
           <button class="btn-improve" id="improve-btn">
             ✨ Improve my resume for this job
           </button>

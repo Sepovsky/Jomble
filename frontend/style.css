@@ -96,6 +96,114 @@ input[type="url"] {
 }
 input[type="url"]:focus { border-color: var(--indigo); }
 
+.prefs-grid input[type="text"] {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: .95rem;
+  color: var(--text);
+  outline: none;
+}
+.prefs-grid input[type="text"]:focus { border-color: var(--indigo); }
+
+select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: .95rem;
+  color: var(--text);
+  background: var(--surface);
+  cursor: pointer;
+  outline: none;
+}
+select:focus { border-color: var(--indigo); }
+
+.prefs-details {
+  margin-bottom: 20px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 0 16px;
+  background: #FAFBFC;
+}
+
+.prefs-summary {
+  padding: 14px 4px;
+  font-weight: 700;
+  font-size: .95rem;
+  cursor: pointer;
+  list-style: none;
+}
+.prefs-summary::-webkit-details-marker { display: none; }
+.prefs-hint {
+  font-weight: 500;
+  color: var(--muted);
+  font-size: .82rem;
+}
+
+.prefs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 20px;
+  padding-bottom: 16px;
+}
+@media (max-width: 640px) {
+  .prefs-grid { grid-template-columns: 1fr; }
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  grid-column: 1 / -1;
+}
+@media (max-width: 640px) {
+  .field-row { grid-template-columns: 1fr; }
+}
+
+/* Preference check banner on results */
+.metadata-banner {
+  margin-bottom: 24px;
+  padding: 16px 18px;
+  border-radius: 10px;
+  font-size: .9rem;
+  line-height: 1.5;
+}
+.metadata-banner strong {
+  display: block;
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 8px;
+}
+.metadata-banner p { margin: 0 0 8px; color: var(--text); }
+.metadata-banner ul {
+  margin: 8px 0 0;
+  padding-left: 1.2em;
+}
+.metadata-banner li { margin: 4px 0; }
+
+.metadata-ok {
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  color: #065F46;
+}
+.metadata-ok .metadata-warn-list {
+  list-style: disc;
+  color: #92400E;
+  background: #FFFBEB;
+  padding: 10px 14px 10px 28px;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.metadata-bad {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #991B1B;
+}
+
 /* Drop zone */
 .drop-zone {
   border: 2px dashed var(--border);

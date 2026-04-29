@@ -12,7 +12,7 @@ const btnSpinner = submitBtn.querySelector(".btn-spinner");
 const errorMsg   = document.getElementById("error-msg");
 const inputCard  = document.getElementById("input-card");
 const resultsCard = document.getElementById("results-card");
-const resetBtn   = document.getElementById("reset-btn");
+const improveBar = document.getElementById("improve-bar");
 const dropZone   = document.getElementById("drop-zone");
 const fileInput  = document.getElementById("resume");
 const fileNameEl = document.getElementById("file-name");
@@ -63,9 +63,7 @@ form.addEventListener("submit", async (e) => {
 
   setLoading(true);
 
-  const formData = new FormData();
-  formData.append("job_url", jobUrl);
-  formData.append("resume", file);
+  const formData = new FormData(form);
 
   try {
     const res = await fetch(API_URL, { method: "POST", body: formData });
@@ -92,6 +90,11 @@ function renderResults(data) {
   inputCard.hidden  = true;
   resultsCard.hidden = false;
 
+  renderMetadataBanner(data);
+
+  const blocked = data.metadata_satisfied === false;
+  if (improveBar) improveBar.hidden = blocked;
+
   // Score ring animation
   const score     = Math.round(data.score);
   const circumference = 314;
@@ -107,7 +110,7 @@ function renderResults(data) {
   // Animate number count-up
   const numEl = document.getElementById("score-number");
   let current = 0;
-  const step  = Math.ceil(score / 40);
+  const step  = Math.max(1, Math.ceil(score / 40));
   const timer = setInterval(() => {
     current = Math.min(current + step, score);
     numEl.textContent = current;
@@ -116,7 +119,9 @@ function renderResults(data) {
 
   // Score title
   const title = document.getElementById("score-title");
-  if      (score >= 80) title.textContent = "Strong Match 🎯";
+  if (blocked) {
+    title.textContent = "Preferences mismatch ⚠️";
+  } else if (score >= 80) title.textContent = "Strong Match 🎯";
   else if (score >= 55) title.textContent = "Moderate Match 👍";
   else if (score >= 30) title.textContent = "Partial Match 🔍";
   else                  title.textContent = "Low Match ⚠️";
@@ -126,6 +131,39 @@ function renderResults(data) {
   renderList("matched-list", "matched-count", data.matched);
   renderList("missing-list",  "missing-count",  data.missing);
   renderList("extra-list",    "extra-count",    data.resume_extra);
+}
+
+function renderMetadataBanner(data) {
+  const el = document.getElementById("metadata-banner");
+  if (!el) return;
+  if (data.metadata_skipped) {
+    el.hidden = true;
+    el.innerHTML = "";
+    return;
+  }
+  el.hidden = false;
+  if (data.metadata_satisfied === false) {
+    el.className = "metadata-banner metadata-bad";
+    const blockers = (data.metadata_blockers || []).map((b) => `<li>${escapeHtml(b)}</li>`).join("");
+    el.innerHTML = `
+      <strong>Does not match your preferences</strong>
+      <p>${escapeHtml(data.metadata_summary || "")}</p>
+      ${blockers ? `<ul>${blockers}</ul>` : ""}`;
+    return;
+  }
+  el.className = "metadata-banner metadata-ok";
+  let html = `<strong>Preferences check</strong><p>${escapeHtml(data.metadata_summary || "")}</p>`;
+  const warns = data.metadata_warnings || [];
+  if (warns.length) {
+    html += `<ul class="metadata-warn-list">${warns.map((w) => `<li>${escapeHtml(w)}</li>`).join("")}</ul>`;
+  }
+  el.innerHTML = html;
+}
+
+function escapeHtml(text) {
+  const d = document.createElement("div");
+  d.textContent = text == null ? "" : String(text);
+  return d.innerHTML;
 }
 
 function renderList(listId, countId, items) {
