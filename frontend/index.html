@@ -3,23 +3,61 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#F5F5F5" />
   <title>Jomble — Resume Matcher</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/png" href="img/jomble-hat.png" />
 </head>
 <body>
-  <div class="page">
-
-    <header class="site-header">
-      <div class="logo">
-        <span class="logo-icon">⚡</span>
-        <span class="logo-text">Jomble</span>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Main">
+      <div class="sidebar-brand">
+        <img
+          class="brand-logo"
+          src="img/jomble-logo.png"
+          width="180"
+          height="48"
+          alt="Jomble"
+        />
+        <p class="sidebar-sub">Resume intelligence</p>
       </div>
-      <p class="tagline">Match your resume to any job posting instantly</p>
-    </header>
 
-    <main>
+      <nav class="sidebar-nav">
+        <span class="sidebar-link sidebar-link--active">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          Job match
+        </span>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="sidebar-foot-note">Preferences → verify posting → score resume fit</span>
+      </div>
+    </aside>
+
+    <div class="main-column">
+      <header class="page-header">
+        <div class="page-header-text">
+          <h1 class="page-title">Match your resume to a role</h1>
+          <p class="page-desc">Add a job URL, your PDF, and optional filters — we check the posting against your preferences, then score how your CV fits the description.</p>
+        </div>
+        <span class="header-pill">AI-powered</span>
+      </header>
+
+      <main class="dashboard-main">
       <!-- Input card -->
-      <section class="card" id="input-card">
+      <section class="card dashboard-panel" id="input-card">
+        <div class="panel-head">
+          <h2 class="panel-title">New analysis</h2>
+          <p class="panel-desc">Job URL, resume PDF, and optional preference filters</p>
+        </div>
         <form id="match-form" novalidate>
 
           <div class="field">
@@ -139,22 +177,28 @@
       </section>
 
       <!-- Results card -->
-      <section class="card results-card" id="results-card" hidden>
+      <section class="card dashboard-panel results-card" id="results-card" hidden>
+
+        <div class="panel-head panel-head--compact">
+          <h2 class="panel-title">Match results</h2>
+        </div>
 
         <div class="metadata-banner" id="metadata-banner" hidden></div>
 
-        <div class="score-section">
-          <div class="score-ring-wrapper">
-            <svg class="score-ring" viewBox="0 0 120 120">
-              <circle class="ring-bg"  cx="60" cy="60" r="50"/>
-              <circle class="ring-fill" cx="60" cy="60" r="50" id="ring-fill"/>
+        <div class="match-hero">
+          <div class="match-hero-score">
+            <div class="score-ring-wrapper">
+            <svg class="score-ring" width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle class="ring-bg" cx="60" cy="60" r="50" fill="none"/>
+              <circle class="ring-fill" cx="60" cy="60" r="50" fill="none" id="ring-fill"/>
             </svg>
             <div class="score-label">
               <span class="score-number" id="score-number">0</span>
               <span class="score-pct">%</span>
             </div>
           </div>
-          <div class="score-meta">
+          </div>
+          <div class="match-hero-copy">
             <h2 class="score-title" id="score-title">Match Score</h2>
             <p class="summary-text" id="summary-text"></p>
           </div>
@@ -185,10 +229,11 @@
       </section>
 
       <!-- Tailor results card -->
-      <section class="card tailor-card" id="tailor-card" hidden>
-        <div class="tailor-header">
-          <span class="tailor-badge">✨ Resume Tailored</span>
-          <h2 class="tailor-title">Here's what changed</h2>
+      <section class="card dashboard-panel tailor-card" id="tailor-card" hidden>
+        <div class="panel-head">
+          <span class="tailor-badge">✨ Tailored output</span>
+          <h2 class="panel-title tailor-title-inline">What changed</h2>
+          <p class="panel-desc">Short-term edits applied to your LaTeX and longer-term growth ideas</p>
         </div>
 
         <div class="tailor-section">
@@ -262,6 +307,7 @@
       </div>
 
     </main>
+    </div>
   </div>
 
   <script src="app.js"></script>
